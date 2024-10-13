@@ -1,0 +1,5 @@
+{
+    "name": "C Development Container",
+    "dockerFile": "Dockerfile",
+    "postCreateCommand": "gcc --version"
+}

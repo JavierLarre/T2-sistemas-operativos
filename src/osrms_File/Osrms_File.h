@@ -6,5 +6,5 @@
 #include <stdint.h>
 
 
-char* getMemoryPath();
-void setMemoryPath(char *path);
+char* get_memory_path();
+void set_memory_path(char *path);

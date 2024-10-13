@@ -6,5 +6,5 @@
 
 
 void os_mount(char *memory_path) {
-    setMemoryPath(memory_path);
+    set_memory_path(memory_path);
 }

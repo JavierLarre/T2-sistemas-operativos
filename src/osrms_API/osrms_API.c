@@ -5,41 +5,6 @@
 #include "osrms_API.h"
 
 
-osrmsFile buscar_archivo(Process p, char *name) {
-    for (int i = 0; i < N_FILE; i++) {
-        if (strcmp(p.file_table[i].name, name) == 0) {
-            return p.file_table[i];
-        }
-    }
-    osrmsFile f;
-    f.valid = 0;
-    return f;
-}
-
-
-Process buscar_proceso(int pid) {
-    for (int i = 0; i < N_PROCESS; i++) {
-        if (pcb_table.processes[i].pid == pid) {
-            return pcb_table.processes[i];
-        }
-    }
-    Process p;
-    p.valid = 0;
-    return p;
-}
-
-
-int calcular_direccion_fisica(int pid, char *archivo) {
-    Process p = buscar_proceso(pid);
-    osrmsFile f = buscar_archivo(p, archivo);
-    int offset = f.virtual_address && 0x7fff; // 15 bits menos significativos
-    int vpn = f.virtual_address >> 15;
-    int sptn = p.first_level_page_table[vpn >> 6];
-    int pfn = espacio_tablas_so.tablas[sptn][vpn && 0b111111];
-    return pfn | offset;
-}
-
-
 void os_mount(char *memory_path) {
     set_memory_path(memory_path);
 }
@@ -116,7 +81,7 @@ void os_start_process(int process_id, char *process_name) {
     Process p;
     p.valid = 1;
     p.pid = process_id;
-    strcpy(p.name, process_name);
+    strcpy((char*)p.name, process_name);
     for (int i = 0; i < N_FILE; i++) 
         p.file_table[i].valid = 0;
     for (int i = 0; i < 64; i++) 
@@ -139,4 +104,61 @@ void os_finish_process(int process_id) {
         }
     }
     // TODO: Liberar memoria asignada al proceso
+}
+
+
+osrmsFile *os_open(int process_id, char *file_name, char mode) {
+    Process p = buscar_proceso(process_id);
+    osrmsFile f = buscar_archivo(p, file_name);
+    if (mode == 'r') return &f; // TODO: BUSCAR ARCHIVO TIENE QUE RETORNAR UN PUNTERO
+    if (mode != 'w') return NULL;
+    if (f.valid) return NULL;
+    for (int i = 0; i < N_FILE; i++) {
+        if (p.file_table[i].valid) continue;
+        p.file_table[i].valid = 1;
+        strcpy((char*)p.file_table[i].name, file_name);
+        p.file_table[i].size = 0;
+        p.file_table[i].virtual_address = 0;
+        return &p.file_table[i];
+    }
+    return NULL;
+}
+
+
+uint32_t os_read_file(osrmsFile *file, char *dest) {
+    uint32_t bytes_leidos = 0;
+    FILE *f = fopen(dest, "wb");
+    for (uint32_t i = 0; i < file->size; i++) {
+        uint8_t byte;
+        read_byte(file->virtual_address + i, &byte);
+        // TODO: ESTE NO ES EL METODO CORRECTO
+        fwrite(&byte, sizeof(uint8_t), 1, f);
+        bytes_leidos++;
+    }
+    fclose(f);
+    return bytes_leidos;
+}
+
+
+int os_write_file(osrmsFile *file, char *src) {
+    uint32_t bytes_escritos = 0;
+    FILE *f = fopen(src, "rb");
+    while (1) {
+        uint8_t byte;
+        fread(&byte, sizeof(uint8_t), 1, f);
+        bool written = write_byte(file->virtual_address + bytes_escritos, byte);
+        if (!written) {
+            fclose(f);
+            return bytes_escritos;
+        }
+        bytes_escritos++;
+    }
+}
+
+
+void os_close(osrmsFile *file) {
+    file->valid = 0;
+    file->size = 0;
+    file->virtual_address = 0;
+    // ESTO NO ES TODO, FALTA LIBERAR MEMORIA
 }

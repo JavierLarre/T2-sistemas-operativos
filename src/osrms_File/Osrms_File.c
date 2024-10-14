@@ -1,31 +1,38 @@
 #include "Osrms_File.h"
 
 
-static char *memory_path = NULL;
-static FILE *file = NULL;
+char *MemoryPath = NULL;
+FILE *file = NULL;
+
+// Memoria
+PCB_Table pcb_table;
+BitmapSO bitmap_so;
+FrameBitmap frame_bitmap;
+EspacioTablasSegundoOrden espacio_tablas_so;
+Memory memory;
 
 
 char* get_memory_path() {
-    return memory_path;
+    return MemoryPath;
+}
+
+
+void set_memory_path(char *path) {
+    if (MemoryPath != NULL) {
+        free(MemoryPath);
+    }
+    MemoryPath = calloc(strlen(path) + 1, sizeof(char));
+    strcpy(MemoryPath, path);
+    
+    if (file != NULL) {
+        fclose(file);
+    }
+    file = fopen(MemoryPath, "rb+");
 }
 
 
 FILE *get_file() {
     return file;
-}
-
-
-void set_memory_path(char *path) {
-    if (memory_path != NULL) {
-        free(memory_path);
-    }
-    memory_path = calloc(strlen(path) + 1, sizeof(char));
-    strcpy(memory_path, path);
-    
-    if (file != NULL) {
-        fclose(file);
-    }
-    file = fopen(memory_path, "rb+");
 }
 
 

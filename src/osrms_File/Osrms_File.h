@@ -44,3 +44,4 @@ Process **get_processes();
 osrmsFile **get_files(Process *p);
 uint8_t get_frame_bitmap_byte(int byte_index);
 uint8_t get_table_bitmap_byte(int byte_index);
+void save_process(Process *p);

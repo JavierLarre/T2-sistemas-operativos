@@ -4,8 +4,9 @@
 
 
 void events() {
-    os_frame_bitmap();
-    os_tp_bitmap();
+    os_ls_processes();
+    os_start_process(1, "process1");
+    os_ls_processes();
 }
 
 

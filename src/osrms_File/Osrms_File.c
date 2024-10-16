@@ -91,7 +91,7 @@ osrmsFile *buscar_archivo(Process *p, char *name) {
 
 Process **get_processes() {
     Process **processes = calloc(N_PROCESS, sizeof(Process*));
-    const size_t tamano_proceso = sizeof(Process);
+    const size_t tamano_proceso = 13;
     const size_t tamano_en_memoria = 256;
     unsigned int base_address = 0;
     for (int i = 0; i < N_PROCESS; i++) {
@@ -139,4 +139,10 @@ uint8_t get_table_bitmap_byte(int byte_index) {
     fseek(file, base_address + byte_index, SEEK_SET);
     fread(&byte, sizeof(uint8_t), 1, file);
     return byte;
+}
+
+
+void save_process(Process *p) {
+    fseek(file, p->address_on_memory, SEEK_SET);
+    fwrite(p, 13, 1, file);
 }

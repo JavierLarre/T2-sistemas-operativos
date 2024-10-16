@@ -5,7 +5,7 @@
 #include "osrms_API.h"
 
 
-static const bool only_show_valid = true;
+static const bool only_show_valid = false;
 
 
 void os_mount(char *memory_path) {
@@ -95,7 +95,19 @@ void os_tp_bitmap() {
 
 
 void os_start_process(int process_id, char *process_name) {
-    
+    Process **processes = get_processes();
+    for (int i = 0; i < N_PROCESS; i++) {
+        if (processes[i]->valid) continue;
+        processes[i]->valid = 1;
+        processes[i]->pid = process_id;
+        strcpy((char*) processes[i]->name, process_name);
+        save_process(processes[i]);
+        break;
+    }
+    for (int i = 0; i < N_PROCESS; i++) {
+        free(processes[i]);
+    }
+    free(processes);
 }
 
 

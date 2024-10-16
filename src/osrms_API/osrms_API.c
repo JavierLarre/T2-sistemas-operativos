@@ -32,22 +32,22 @@ int os_exists(int process_id, char *file_name) {
 }
 
 
-void os_ls_files(int process_id) {
-    Process *p = buscar_proceso(process_id);
+// void os_ls_files(int process_id) {
+//     Process *p = buscar_proceso(process_id);
 
-    if (!p->valid || p == NULL) {
-        printf("Proceso %d no existe\n", process_id);
-        return;
-    }
+//     if (!p->valid || p == NULL) {
+//         printf("Proceso %d no existe\n", process_id);
+//         return;
+//     }
 
-    printf("Archivos del proceso %d:\n", process_id);
-    for (int i = 0; i < N_FILE; i++) {
-        if (p->file_table[i].valid) {
-            printf("\t%s: %d B\n", p->file_table[i].name, p->file_table[i].size);
-        }
-    }
-    printf("\n");
-}
+//     printf("Archivos del proceso %d:\n", process_id);
+//     for (int i = 0; i < N_FILE; i++) {
+//         if (p->file_table[i].valid) {
+//             printf("\t%s: %d B\n", p->file_table[i].name, p->file_table[i].size);
+//         }
+//     }
+//     printf("\n");
+// }
 
 
 void os_frame_bitmap() {
@@ -107,34 +107,34 @@ void os_tp_bitmap() {
 }
 
 
-void os_start_process(int process_id, char *process_name) {
-    bool found = false;
-    int index = -1;
-    //p.file_table = calloc(N_FILE, sizeof(osrmsFile));
+// void os_start_process(int process_id, char *process_name) {
+//     bool found = false;
+//     int index = -1;
+//     //p.file_table = calloc(N_FILE, sizeof(osrmsFile));
     
 
-    for (int i = 0; i < N_PROCESS; i++) {
-        if (!pcb_table.processes[i].valid) {
-            pcb_table.processes[i].valid = 1;
-            pcb_table.processes[i].pid = process_id;
-            strcpy((char*)pcb_table.processes[i].name, process_name);
-            found = true;
-            index = i;
-            break;
-        }
-    }
+//     for (int i = 0; i < N_PROCESS; i++) {
+//         if (!pcb_table.processes[i].valid) {
+//             pcb_table.processes[i].valid = 1;
+//             pcb_table.processes[i].pid = process_id;
+//             strcpy((char*)pcb_table.processes[i].name, process_name);
+//             found = true;
+//             index = i;
+//             break;
+//         }
+//     }
 
-    if (!found) {
-        printf("ERROR: proceso %d no iniciado, no queda espacio disponible", process_id);
-        return;
-    }
+//     if (!found) {
+//         printf("ERROR: proceso %d no iniciado, no queda espacio disponible", process_id);
+//         return;
+//     }
 
-    for (int i = 0; i < N_FILE; i++) 
-        pcb_table.processes[index].file_table[i].valid = 0;
-    for (int i = 0; i < 64; i++) 
-        pcb_table.processes[index].first_level_page_table[i] = 0;
+//     for (int i = 0; i < N_FILE; i++) 
+//         pcb_table.processes[index].file_table[i].valid = 0;
+//     for (int i = 0; i < 64; i++) 
+//         pcb_table.processes[index].first_level_page_table[i] = 0;
     
-}
+// }
 
 
 void os_finish_process(int process_id) {
@@ -148,26 +148,26 @@ void os_finish_process(int process_id) {
 }
 
 
-osrmsFile *os_open(int process_id, char *file_name, char mode) {
-    Process *p = buscar_proceso(process_id);
+// osrmsFile *os_open(int process_id, char *file_name, char mode) {
+//     Process *p = buscar_proceso(process_id);
 
-    if (!p->valid || p == NULL) return NULL;
+//     if (!p->valid || p == NULL) return NULL;
 
-    osrmsFile *f = buscar_archivo(p, file_name);
+//     osrmsFile *f = buscar_archivo(p, file_name);
 
-    if (mode == 'r') return f;
-    if (mode != 'w') return NULL;
-    //if (!f) return NULL;
-    for (int i = 0; i < N_FILE; i++) {
-        if (p->file_table[i].valid) continue;
-        p->file_table[i].valid = 1;
-        strcpy((char*)p->file_table[i].name, file_name);
-        p->file_table[i].size = 0;
-        p->file_table[i].virtual_address = 0;
-        return &p->file_table[i];
-    }
-    return NULL;
-}
+//     if (mode == 'r') return f;
+//     if (mode != 'w') return NULL;
+//     //if (!f) return NULL;
+//     for (int i = 0; i < N_FILE; i++) {
+//         if (p->file_table[i].valid) continue;
+//         p->file_table[i].valid = 1;
+//         strcpy((char*)p->file_table[i].name, file_name);
+//         p->file_table[i].size = 0;
+//         p->file_table[i].virtual_address = 0;
+//         return &p->file_table[i];
+//     }
+//     return NULL;
+// }
 
 
 uint32_t os_read_file(osrmsFile *file, char *dest) {

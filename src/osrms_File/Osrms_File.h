@@ -7,6 +7,9 @@
 
 #define N_PROCESS 32
 #define N_FILE 5
+#define KB (1 << 10)
+#define MB (1 << 20)
+#define GB (1 << 30)
 
 #pragma pack(1)
 typedef struct osrms_file {
@@ -17,13 +20,20 @@ typedef struct osrms_file {
 } osrmsFile; // total 23 bytes
 
 
+// typedef struct process {
+//     uint8_t valid; // 1 byte
+//     uint8_t pid; // 1 byte
+//     unsigned char name[11]; // 11 bytes
+//     osrmsFile file_table[N_FILE]; // 5 * 23 = 115 bytes
+//     uint16_t first_level_page_table[64]; // 64 * 2 = 128 bytes
+// } Process; // total 256 bytes
+
+
 typedef struct process {
     uint8_t valid; // 1 byte
     uint8_t pid; // 1 byte
     unsigned char name[11]; // 11 bytes
-    osrmsFile file_table[N_FILE]; // 5 * 23 = 115 bytes
-    uint16_t first_level_page_table[64]; // 64 * 2 = 128 bytes
-} Process; // total 256 bytes
+} Process; // total 13 bytes
 
 
 typedef struct pcb_table {
@@ -74,6 +84,6 @@ extern Memory memory;
 char* get_memory_path();
 void set_memory_path(char *path);
 void read_byte(uint32_t address, uint8_t *data);
-bool write_byte(uint32_t address, uint8_t data);
+bool write_byte(uint32_t address, uint8_t *data);
 Process *buscar_proceso(int pid);
 osrmsFile *buscar_archivo(Process *p, char *name);

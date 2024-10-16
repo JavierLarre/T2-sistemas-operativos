@@ -18,15 +18,7 @@ int main(int argc, char const *argv[])
 
     // check all segments size
     // print pcb size in kb
-    printf("pcb_table size: %lu KB\n", sizeof(pcb_table) / 1024);
-    // print bitmap_so size in bytes
-    printf("bitmap_so size: %lu bytes\n", sizeof(bitmap_so));
-    // print tablas_so size in kb
-    printf("tablas_so size: %lu KB\n", sizeof(espacio_tablas_so) / 1024);
-    // print frame_bitmap size in kb
-    printf("frame_bitmap size: %lu KB\n", sizeof(frame_bitmap) / 1024);
-    // print memory size in GB
-    printf("memory size: %lu GB\n", sizeof(memory) / 1024 / 1024 / 1024);
+    getchar();
 
     // read pcb_table
 

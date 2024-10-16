@@ -2,7 +2,7 @@
 #include "../osrms_File/Osrms_File.h"
 
 
-
+void print_sizes();
 void os_mount(char *memory_path);
 void os_ls_processes();
 int os_exists(int process_id, char *file_name);

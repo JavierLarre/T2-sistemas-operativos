@@ -1,29 +1,16 @@
 #include "Osrms_File.h"
 
 
+#define N_PROCESS 32
+#define N_FILE 5
+
+
 char *MemoryPath = NULL;
 FILE *file = NULL;
 
-// Memoria
-PCB_Table pcb_table;
-BitmapSO bitmap_so;
-FrameBitmap frame_bitmap;
-EspacioTablasSegundoOrden espacio_tablas_so;
-Memory memory;
 
-
-void print_sizes() {
-    // check all segments size
-    // print pcb size in kb
-    printf("pcb_table size: %zu KB\n", sizeof(pcb_table) / KB);
-    // print bitmap_so size in bytes
-    printf("bitmap_so size: %zu bytes\n", sizeof(bitmap_so));
-    // print tablas_so size in kb
-    printf("tablas_so size: %zu KB\n", sizeof(espacio_tablas_so) / KB);
-    // print frame_bitmap size in kb
-    printf("frame_bitmap size: %zu KB\n", sizeof(frame_bitmap) / KB);
-    // print memory size in GB
-    printf("memory size: %zu GB\n", sizeof(memory) / GB);
+static bool compare_unsigned_string(unsigned char *s1, char *s2, size_t n) {
+    return !strncmp((char*) s1, s2, n);
 }
 
 
@@ -45,21 +32,13 @@ void set_memory_path(char *path) {
 }
 
 
-FILE *get_file() {
-    return file;
-}
-
-
-void read_byte(uint32_t address, uint8_t *data) {
-    fseek(file, address, SEEK_SET);
-    fread(data, sizeof(uint8_t), 1, file);
-}
-
-
-bool write_byte(uint32_t address, uint8_t *data) {
-    fseek(file, address, SEEK_SET);
-    fwrite(&data, sizeof(uint8_t), 1, file);
-    return true;
+void close_memory() {
+    if (MemoryPath != NULL) {
+        free(MemoryPath);
+    }
+    if (file != NULL) {
+        fclose(file);
+    }
 }
 
 
@@ -67,36 +46,39 @@ Process *buscar_proceso(int pid) {
     Process *p = calloc(1, sizeof(Process));
     const size_t tamano_proceso = sizeof(Process);
     const size_t tamano_en_memoria = 256;
-    printf("Tamaño de proceso: %zu\n", tamano_proceso);
     for (int i = 0; i < N_PROCESS; i++) {
-        printf("Address %zu\n", i * tamano_en_memoria);
         fseek(file, i * tamano_en_memoria, SEEK_SET);
         fread(p, tamano_proceso, 1, file);
-        printf("Proceso %d\n", p->pid);
-        printf("Nombre Proceso: %s\n", p->name);
         if (p->valid && p->pid == pid) {
+            p->address_on_memory = i * tamano_en_memoria;
             return p;
         }
     }
-    printf("Proceso %d no encontrado\n", pid);
     free(p);
     return NULL;
 }
 
 
-// osrmsFile *buscar_archivo(Process *p, char *name) {
-//     for (int i = 0; i < N_FILE; i++) {
-//         if (!p->file_table[i].valid) continue;
-//         if (strcmp((char*)p->file_table[i].name, name) == 0) {
-//             return &p->file_table[i];
-//         }
-//     }
-//     printf("Archivo %s no encontrado\n", name);
-//     return NULL;
-// }
+bool file_is_valid(osrmsFile *f, char *name) {
+    return f->valid && compare_unsigned_string(f->name, name, sizeof(f->name));
+}
 
 
-osrmsFile *buscar_archivo(Process *p, char *name) {return NULL;}
+osrmsFile *buscar_archivo(Process *p, char *name) {
+    osrmsFile *osrms_file = calloc(1, sizeof(osrmsFile));
+    const size_t tamano_archivo = sizeof(osrmsFile);
+    uint16_t base_address = p->address_on_memory + 13;
+    fseek(file, base_address, SEEK_SET);
+    for (int i = 0; i < N_FILE; i++) {
+        fseek(file, i * tamano_archivo, SEEK_CUR);
+        fread(osrms_file, tamano_archivo, 1, file);
+        if (file_is_valid(osrms_file, name)) {
+            return osrms_file;
+        }
+    }
+    free(osrms_file);
+    return NULL;
+}
 
 
 // uint32_t calcular_direccion_fisica(int pid, char *archivo) {

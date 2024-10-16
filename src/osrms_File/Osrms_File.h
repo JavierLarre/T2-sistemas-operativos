@@ -26,7 +26,6 @@ typedef struct process {
 } Process; // total 13 bytes
 
 
-#pragma pack(1) // gonza q es eto
 typedef struct osrms_file {
     uint8_t valid; // 1 byte
     unsigned char name[14]; // 14 bytes
@@ -42,3 +41,6 @@ void close_memory();
 Process *buscar_proceso(int pid);
 osrmsFile *buscar_archivo(Process *p, char *name);
 Process **get_processes();
+osrmsFile **get_files(Process *p);
+uint8_t get_frame_bitmap_byte(int byte_index);
+uint8_t get_table_bitmap_byte(int byte_index);

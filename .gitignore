@@ -3,3 +3,4 @@ obj/
 /mem*
 /osrms
 /test
+/output.log

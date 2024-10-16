@@ -54,13 +54,13 @@ Process *buscar_proceso(int pid) {
     Process *p = calloc(1, sizeof(Process));
     const size_t tamano_proceso = sizeof(Process);
     const size_t tamano_en_memoria = 256;
+    unsigned int base_address = 0;
     for (int i = 0; i < N_PROCESS; i++) {
-        fseek(file, i * tamano_en_memoria, SEEK_SET);
+        fseek(file, base_address, SEEK_SET);
         fread(p, tamano_proceso, 1, file);
-        p->address_on_memory = i * tamano_en_memoria;
-        if (p->valid && p->pid == pid) {
-            return p;
-        }
+        p->address_on_memory = base_address;
+        if (p->valid && p->pid == pid) return p;
+        base_address += tamano_en_memoria;
     }
     free(p);
     return NULL;
@@ -93,12 +93,50 @@ Process **get_processes() {
     Process **processes = calloc(N_PROCESS, sizeof(Process*));
     const size_t tamano_proceso = sizeof(Process);
     const size_t tamano_en_memoria = 256;
-    fseek(file, 0, SEEK_SET);
+    unsigned int base_address = 0;
     for (int i = 0; i < N_PROCESS; i++) {
         processes[i] = calloc(1, sizeof(Process));
-        fseek(file, i * tamano_en_memoria, SEEK_CUR);
+        fseek(file, base_address, SEEK_SET);
         fread(processes[i], tamano_proceso, 1, file);
-        processes[i]->address_on_memory = i * tamano_en_memoria;
+        processes[i]->address_on_memory = base_address;
+        base_address += tamano_en_memoria;
     }
     return processes;
+}
+
+
+osrmsFile **get_files(Process *p) {
+    osrmsFile **files = calloc(N_FILE, sizeof(osrmsFile*));
+    const size_t tamano_archivo = sizeof(osrmsFile);
+    uint16_t base_address = p->address_on_memory + 13;
+    for (int i = 0; i < N_FILE; i++) {
+        files[i] = calloc(1, sizeof(osrmsFile));
+        fseek(file, base_address, SEEK_SET);
+        fread(files[i], tamano_archivo, 1, file);
+        base_address += tamano_archivo - 1;
+        // -1 to avoid the fseek in the next iteration
+        // because the next iteration will do the fseek
+        // in the correct position
+        // copilot comentó esto
+        // QUE FSEEK HACE QUE
+    }
+    return files;
+}
+
+
+uint8_t get_frame_bitmap_byte(int byte_index) {
+    uint8_t byte;
+    const uint32_t base_address = 8*KB + 128 + 128*KB;
+    fseek(file, base_address + byte_index, SEEK_SET);
+    fread(&byte, sizeof(uint8_t), 1, file);
+    return byte;
+}
+
+
+uint8_t get_table_bitmap_byte(int byte_index) {
+    uint8_t byte;
+    const uint32_t base_address = 8*KB;
+    fseek(file, base_address + byte_index, SEEK_SET);
+    fread(&byte, sizeof(uint8_t), 1, file);
+    return byte;
 }

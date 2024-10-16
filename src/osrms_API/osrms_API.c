@@ -10,7 +10,13 @@ void os_mount(char *memory_path) {
 
 
 void os_ls_processes() {
-    
+    Process **processes = get_processes();
+    for (int i = 0; i < N_PROCESS; i++) {
+        printf("Process %d\n", i);
+        print_process(processes[i]);
+        free(processes[i]);
+    }
+    free(processes);
 }
 
 
@@ -63,9 +69,11 @@ void os_close(osrmsFile *file) {
 
 
 void print_process(Process *p) {
-    printf("Process name: %s\n", p->name);
-    printf("Process pid: %d\n", p->pid);
-    printf("Process address on memory: %d\n", p->address_on_memory);
+    printf("\tis valid: %d\n", p->valid);
+    printf("\tname: %s\n", p->name);
+    printf("\tpid: %d\n", p->pid);
+    printf("\taddress on memory: %d\n", p->address_on_memory);
+    printf("\n");
 }
 
 

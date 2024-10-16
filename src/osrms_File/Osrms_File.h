@@ -11,6 +11,10 @@
 #define GB (1 << 30)
 
 
+#define N_PROCESS 32
+#define N_FILE 5
+
+
 extern char *MemoryPath;
 
 
@@ -37,3 +41,4 @@ void close_memory();
 
 Process *buscar_proceso(int pid);
 osrmsFile *buscar_archivo(Process *p, char *name);
+Process **get_processes();

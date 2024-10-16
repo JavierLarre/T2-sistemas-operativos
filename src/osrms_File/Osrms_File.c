@@ -1,9 +1,6 @@
 #include "Osrms_File.h"
 
 
-#define N_PROCESS 32
-#define N_FILE 5
-
 
 char *MemoryPath = NULL;
 FILE *file = NULL;
@@ -42,6 +39,17 @@ void close_memory() {
 }
 
 
+// uint32_t calcular_direccion_fisica(int pid, char *archivo) {
+//     Process *p = buscar_proceso(pid);
+//     osrmsFile *f = buscar_archivo(p, archivo);
+//     uint32_t offset = f->virtual_address && 0x7fff; // 15 bits menos significativos
+//     uint32_t vpn = f->virtual_address >> 15;
+//     uint32_t sptn = p->first_level_page_table[vpn >> 6];
+//     uint32_t pfn = espacio_tablas_so.tablas[sptn][vpn && 0x3f];
+//     return pfn | offset;
+// }
+
+
 Process *buscar_proceso(int pid) {
     Process *p = calloc(1, sizeof(Process));
     const size_t tamano_proceso = sizeof(Process);
@@ -49,8 +57,8 @@ Process *buscar_proceso(int pid) {
     for (int i = 0; i < N_PROCESS; i++) {
         fseek(file, i * tamano_en_memoria, SEEK_SET);
         fread(p, tamano_proceso, 1, file);
+        p->address_on_memory = i * tamano_en_memoria;
         if (p->valid && p->pid == pid) {
-            p->address_on_memory = i * tamano_en_memoria;
             return p;
         }
     }
@@ -81,12 +89,16 @@ osrmsFile *buscar_archivo(Process *p, char *name) {
 }
 
 
-// uint32_t calcular_direccion_fisica(int pid, char *archivo) {
-//     Process *p = buscar_proceso(pid);
-//     osrmsFile *f = buscar_archivo(p, archivo);
-//     uint32_t offset = f->virtual_address && 0x7fff; // 15 bits menos significativos
-//     uint32_t vpn = f->virtual_address >> 15;
-//     uint32_t sptn = p->first_level_page_table[vpn >> 6];
-//     uint32_t pfn = espacio_tablas_so.tablas[sptn][vpn && 0x3f];
-//     return pfn | offset;
-// }
+Process **get_processes() {
+    Process **processes = calloc(N_PROCESS, sizeof(Process*));
+    const size_t tamano_proceso = sizeof(Process);
+    const size_t tamano_en_memoria = 256;
+    fseek(file, 0, SEEK_SET);
+    for (int i = 0; i < N_PROCESS; i++) {
+        processes[i] = calloc(1, sizeof(Process));
+        fseek(file, i * tamano_en_memoria, SEEK_CUR);
+        fread(processes[i], tamano_proceso, 1, file);
+        processes[i]->address_on_memory = i * tamano_en_memoria;
+    }
+    return processes;
+}

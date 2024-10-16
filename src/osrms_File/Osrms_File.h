@@ -8,27 +8,27 @@
 #define N_PROCESS 32
 #define N_FILE 5
 
-
+#pragma pack(1)
 typedef struct osrms_file {
-    bool valid;
-    unsigned char name[14];
-    uint32_t size;
-    uint32_t virtual_address;
-} osrmsFile;
+    bool valid; // 1 byte
+    unsigned char name[14]; // 14 bytes
+    uint32_t size; // 4 bytes
+    uint32_t virtual_address; // 4 bytes
+} osrmsFile; // total 23 bytes
 
 
 typedef struct process {
-    uint8_t valid;
-    uint8_t pid;
-    unsigned char name[11];
-    osrmsFile file_table[N_FILE];
-    uint16_t first_level_page_table[64];
-} Process;
+    uint8_t valid; // 1 byte
+    uint8_t pid; // 1 byte
+    unsigned char name[11]; // 11 bytes
+    osrmsFile file_table[N_FILE]; // 5 * 23 = 115 bytes
+    uint16_t first_level_page_table[64]; // 64 * 2 = 128 bytes
+} Process; // total 256 bytes
 
 
 typedef struct pcb_table {
-    Process processes[N_PROCESS];
-} PCB_Table;
+    Process processes[N_PROCESS]; // 32 * 256 = 8KB
+} PCB_Table; // total 8KB
 
 
 typedef struct bitmap_tabla_paginas_segundo_orden {
@@ -37,13 +37,13 @@ typedef struct bitmap_tabla_paginas_segundo_orden {
 
 
 typedef struct espacio_tablas_segundo_orden {
-    uint16_t tablas[1024][64];
+    uint16_t tablas[1024][64]; // Espacio total: 1024 * 64 * 2 = 128KB
 } EspacioTablasSegundoOrden;
 
 
 typedef struct frame_bitmap {
-    bool bitmap[8 * (1 << 10)]; // 8 * 1024 = 8KB
-    // uint8_t bitmap[1 << 10]; // 1024 bytes, cada byte tiene 8 bits, 1024 * 8 = 8KB
+    uint64_t bitmap[8 * (1 << 10)]; // 8 bytes (64 bits) x celda. Total 1024 celdas
+    // uint8_t bitmap[1 << 10]; // Tamaño total: 8kb
 } FrameBitmap;
 
 
@@ -57,10 +57,12 @@ typedef struct memory {
     Frame frames[1 << 16];
 } Memory;
 
+#pragma pack()
 
 extern char *MemoryPath;
 extern FILE *file;
 
+FILE *get_file();
 
 // Memoria
 extern PCB_Table pcb_table;
@@ -73,5 +75,5 @@ char* get_memory_path();
 void set_memory_path(char *path);
 void read_byte(uint32_t address, uint8_t *data);
 bool write_byte(uint32_t address, uint8_t data);
-Process buscar_proceso(int pid);
-osrmsFile buscar_archivo(Process p, char *name);
+Process *buscar_proceso(int pid);
+osrmsFile *buscar_archivo(Process *p, char *name);

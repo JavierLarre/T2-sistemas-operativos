@@ -70,7 +70,7 @@ bool file_name_is_name(osrmsFile *f, char *name) {
 
 osrmsFile *buscar_archivo(Process *p, char *name) {
     osrmsFile *osrms_file = calloc(1, sizeof(osrmsFile));
-    const size_t tamano_archivo = sizeof(osrmsFile);
+    const size_t tamano_archivo = 23;
     uint16_t base_address = p->address_on_memory + 13;
     fseek(file, base_address, SEEK_SET);
     for (int i = 0; i < N_FILE; i++) {
@@ -109,13 +109,13 @@ void free_processes(Process **processes) {
 
 osrmsFile **get_files(Process *p) {
     osrmsFile **files = calloc(N_FILE, sizeof(osrmsFile*));
-    const size_t tamano_archivo = sizeof(osrmsFile);
+    const size_t tamano_archivo = 23;
     uint16_t base_address = p->address_on_memory + 13;
     for (int i = 0; i < N_FILE; i++) {
         files[i] = calloc(1, sizeof(osrmsFile));
         fseek(file, base_address, SEEK_SET);
         fread(files[i], tamano_archivo, 1, file);
-        base_address += tamano_archivo - 1;
+        base_address += tamano_archivo;
         // -1 to avoid the fseek in the next iteration
         // because the next iteration will do the fseek
         // in the correct position

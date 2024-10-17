@@ -15,6 +15,7 @@ void os_mount(const char *memory_path) {
 
 void os_ls_processes() {
     Process **processes = get_processes();
+    printf("Processes:\n\n");
     for (int i = 0; i < N_PROCESS; i++) {
         if (only_show_valid && !processes[i]->valid) {
             free(processes[i]);
@@ -40,6 +41,7 @@ void os_ls_files(int process_id) {
     Process *p = buscar_proceso(process_id);
     osrmsFile **files = get_files(p);
     free(p);
+    printf("Files for process %d:\n\n", process_id);
     for (int i = 0; i < N_FILE; i++) {
         if (only_show_valid && !files[i]->valid) {
             free(files[i]);
@@ -111,7 +113,6 @@ void os_start_process(int process_id, char *process_name) {
 
 void os_finish_process(int process_id) {
     Process **processes = get_processes();
-    FILE *memory = get_memory_file();
     for (int i = 0; i < N_PROCESS; i++) {
         if (processes[i]->pid == process_id) {
             processes[i]->valid = 0;
@@ -376,7 +377,7 @@ void print_process(Process *p) {
 void print_file(osrmsFile *f) {
     if (!only_show_valid) printf("\tis valid: %d\n", f->valid);
     printf("\tFile name: %s\n", f->name);
-    printf("\tFile size: %u\n", f->size);
+    printf("\tFile size: %llu\n", f->size);
     printf("\tFile virtual address: 0x%x\n",f->virtual_address);
 }
 

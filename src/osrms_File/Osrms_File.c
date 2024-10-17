@@ -15,7 +15,7 @@ char* get_memory_path() {
     return MemoryPath;
 }
 
-void set_memory_path(char *path) {
+void set_memory_path(const char *path) {
     if (MemoryPath != NULL) {
         free(MemoryPath);
     }
@@ -27,7 +27,9 @@ void set_memory_path(char *path) {
     }
     file = fopen(MemoryPath, "rb+");
 }
-
+FILE *get_memory_file() {
+    return file;
+}
 
 void close_memory() {
     if (MemoryPath != NULL) {
@@ -37,17 +39,6 @@ void close_memory() {
         fclose(file);
     }
 }
-
-
-// uint32_t calcular_direccion_fisica(int pid, char *archivo) {
-//     Process *p = buscar_proceso(pid);
-//     osrmsFile *f = buscar_archivo(p, archivo);
-//     uint32_t offset = f->virtual_address && 0x7fff; // 15 bits menos significativos
-//     uint32_t vpn = f->virtual_address >> 15;
-//     uint32_t sptn = p->first_level_page_table[vpn >> 6];
-//     uint32_t pfn = espacio_tablas_so.tablas[sptn][vpn && 0x3f];
-//     return pfn | offset;
-// }
 
 
 Process *buscar_proceso(int pid) {
@@ -104,6 +95,12 @@ Process **get_processes() {
     return processes;
 }
 
+void free_processes(Process **processes) {
+    for (int i = 0; i < N_PROCESS; i++) {
+        free(processes[i]);
+    }
+    free(processes);
+}
 
 osrmsFile **get_files(Process *p) {
     osrmsFile **files = calloc(N_FILE, sizeof(osrmsFile*));
@@ -123,6 +120,12 @@ osrmsFile **get_files(Process *p) {
     return files;
 }
 
+void free_files(osrmsFile **files) {
+    for (int i = 0; i < N_FILE; i++) {
+        free(files[i]);
+    }
+    free(files);
+}
 
 uint8_t get_frame_bitmap_byte(int byte_index) {
     uint8_t byte;
@@ -145,4 +148,158 @@ uint8_t get_table_bitmap_byte(int byte_index) {
 void save_process(Process *p) {
     fseek(file, p->address_on_memory, SEEK_SET);
     fwrite(p, 13, 1, file);
+}
+// Save data in PCB table.
+void save_files(osrmsFile **files, Process *p) {
+    const size_t tamano_archivo = sizeof(osrmsFile);
+    uint16_t base_address = p->address_on_memory + 13;
+    for (int i = 0; i < N_FILE; i++) {
+        fseek(file, base_address, SEEK_SET);
+        fwrite(files[i], tamano_archivo, 1, file);
+        base_address += tamano_archivo - 1;
+    }
+}
+// fo page table. Has 64 entries o 2 bytes each.
+// Belongs to a process and starts at address_on_memory + 13 + 23*N_FILE
+uint16_t *get_fo_page_table(Process *p) {
+    uint16_t *fo_page_table = calloc(64, sizeof(uint16_t));
+    uint16_t base_address = p->address_on_memory + 13 + 23*N_FILE;
+    fseek(file, base_address, SEEK_SET);
+    fread(fo_page_table, 2, 64, file); // reads a chunk of 128 bytes
+    return fo_page_table;
+}
+
+// so page table. Has 64 entries o 2 bytes each. Total 128 bytes.
+// Receives a number between 0 and 1023 that corresponds to the so page table in the so page table space.
+// SO page table space starts at PCB + Page_Table_bitmap = 8KB + 128B
+uint16_t *get_so_page_table(int so_page_table_number) {
+    uint16_t *so_page_table = calloc(64, sizeof(uint16_t));
+    uint16_t base_address = 8*KB + 128 + so_page_table_number * 128;
+    fseek(file, base_address, SEEK_SET);
+    fread(so_page_table, 2, 64, file); // reads a chunk of 128 bytes
+    return so_page_table;
+}
+
+// gets VPN from a virtual address
+// VAN : 5 bit 0b00000 + 12 bit VPN + 15 bit offset = 32 bit
+
+uint16_t get_vpn(uint32_t virtual_address) {
+    return virtual_address >> 15;
+}
+
+// split VPN in 2 parts of 6 bits each
+
+uint8_t get_vpn1(uint16_t vpn) {
+    return vpn >> 6;
+}
+
+uint8_t get_vpn2(uint16_t vpn) {
+    return vpn & 0x3f;
+}
+
+// get physical address from a process and a file
+
+uint32_t get_physical_address(Process *p, osrmsFile *f) {
+    
+    if (!p || !f) return 0;
+
+    // dissasemble virtual address
+    uint32_t offset = f->virtual_address && 0x7fff; // 15 bits menos significativos
+    uint32_t vpn = get_vpn(f->virtual_address);
+    uint8_t vpn1 = get_vpn1(vpn);
+    uint8_t vpn2 = get_vpn2(vpn);
+
+    // fo page table
+    uint16_t *fo_page_table = get_fo_page_table(p);
+    uint16_t sptn = fo_page_table[vpn1];
+
+    // so page table
+
+    uint16_t *so_page_table = get_so_page_table(sptn);
+    uint16_t pfn = so_page_table[vpn2];
+
+    // physical address
+
+    uint32_t physical_adress = pfn | offset;
+
+    free(fo_page_table);
+    free(so_page_table);
+
+    return physical_adress;
+}
+
+// get addresses occupied by a file in a process (max 5)
+uint32_t *get_occupied_addres(Process *p) {
+
+    uint32_t *addresses = calloc(N_FILE, sizeof(uint32_t));
+    osrmsFile **files = get_files(p);
+    for (int i = 0; i < N_FILE; i++) {
+        addresses[i] = files[i]->virtual_address;
+    }
+
+    // sort addresses ascending
+
+    for (int i = 0; i < N_FILE; i++) {
+        for (int j = i + 1; j < N_FILE; j++) {
+            if (addresses[i] > addresses[j]) {
+                uint32_t temp = addresses[i];
+                addresses[i] = addresses[j];
+                addresses[j] = temp;
+            }
+        }
+    }
+
+    free_files(files);
+    return addresses;
+
+}
+
+// get file sizes of a process (max 5)
+
+uint32_t *get_file_sizes(Process *p) {
+    uint32_t *sizes = calloc(N_FILE, sizeof(uint32_t));
+    osrmsFile **files = get_files(p);
+    for (int i = 0; i < N_FILE; i++) {
+        sizes[i] = files[i]->size;
+    }
+    free_files(files);
+    return sizes;
+}
+
+// search for space in the virtual memory to store a file
+// returns the virtual address where the file will be stored
+
+uint32_t get_virtual_address(Process *p, uint32_t file_size) {
+    uint32_t *addresses = get_occupied_addres(p);
+    uint32_t *sizes = get_file_sizes(p);
+    uint32_t virtual_address = -1;
+    
+    for (int i = 0; i < N_FILE; i++) {
+        // try to fit the file in the space between the files
+        // if the file fits, return the virtual address
+
+        // CASE 1: file fits starting from the beginning of the virtual memory
+        if (i == 0 && addresses[i] >= file_size) {
+            virtual_address = 0;
+            break;
+        }
+
+        // CASE 2: file fits between two files
+
+        if (i < N_FILE - 1 && addresses[i] + sizes[i] + file_size <= addresses[i + 1]) {
+            virtual_address = addresses[i] + sizes[i];
+            break;
+        }
+
+        // CASE 3: file fits at the end of the virtual memory
+
+        if (i == N_FILE - 1 && addresses[i] + sizes[i] + file_size <= VIRTUAL_MEMORY_SIZE) {
+            virtual_address = addresses[i] + sizes[i];
+            break;
+        }
+    }
+
+    free(addresses);
+    free(sizes);
+    return virtual_address;
 }

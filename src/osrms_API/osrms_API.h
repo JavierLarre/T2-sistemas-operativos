@@ -2,7 +2,7 @@
 #include "../osrms_File/Osrms_File.h"
 
 
-void os_mount(char *memory_path);
+void os_mount(const char *memory_path);
 
 void os_ls_processes();
 
@@ -20,11 +20,11 @@ void os_finish_process(int process_id);
 
 osrmsFile *os_open(int process_id, char *file_name, char mode);
 
-int os_read_file(osrmsFile *file, char *dest);
+int os_read_file(osrmsFile *file_desc, char *dest);
 
-int os_write_file(osrmsFile *file, char *src);
+int os_write_file(osrmsFile *file_desc, char *src);
 
-void os_close(osrmsFile *file);
+void os_close(osrmsFile *file_desc);
 
 void print_process(Process *p);
 

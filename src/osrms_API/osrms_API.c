@@ -5,15 +5,13 @@
 #include "osrms_API.h"
 
 
-static const bool only_show_valid = false;
-
-
 void os_mount(const char *memory_path) {
     set_memory_path(memory_path);
 }
 
 
 void os_ls_processes() {
+    bool only_show_valid = false;
     Process **processes = get_processes();
     printf("Processes:\n\n");
     for (int i = 0; i < N_PROCESS; i++) {
@@ -32,12 +30,15 @@ void os_ls_processes() {
 int os_exists(int process_id, char *file_name) {
     Process *p = buscar_proceso(process_id);
     osrmsFile *file = buscar_archivo(p, file_name);
+    bool exists = file != NULL;
     free(p);
-    return file != NULL;
+    free(file);
+    return exists;
 }
 
 
 void os_ls_files(int process_id) {
+    bool only_show_valid = false;
     Process *p = buscar_proceso(process_id);
     osrmsFile **files = get_files(p);
     free(p);
@@ -362,23 +363,6 @@ void os_close(osrmsFile *file_desc) {
     free_files(files);
     free(file_desc);
 
-}
-
-
-void print_process(Process *p) {
-    if (!only_show_valid) printf("\tis valid: %d\n", p->valid);
-    printf("\tname: %s\n", p->name);
-    printf("\tpid: %u\n", p->pid);
-    printf("\taddress on memory: 0x%x\n", p->address_on_memory);
-    printf("\n");
-}
-
-
-void print_file(osrmsFile *f) {
-    if (!only_show_valid) printf("\tis valid: %d\n", f->valid);
-    printf("\tFile name: %s\n", f->name);
-    printf("\tFile size: %llu\n", f->size);
-    printf("\tFile virtual address: 0x%x\n",f->virtual_address);
 }
 
 

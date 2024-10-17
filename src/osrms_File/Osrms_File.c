@@ -1,7 +1,6 @@
 #include "Osrms_File.h"
 
 
-
 char *MemoryPath = NULL;
 FILE *file = NULL;
 
@@ -41,6 +40,28 @@ void close_memory() {
 }
 
 
+void print_process(Process *p) {
+    bool only_show_valid = false;
+    if (!only_show_valid)
+        printf("\tis valid: %d\n", p->valid);
+    printf("\tname: %s\n", p->name);
+    printf("\tpid: %u\n", p->pid);
+    printf("\taddress on memory: 0x%x\n", p->address_on_memory);
+    printf("\n");
+}
+
+
+void print_file(osrmsFile *f) {
+    bool only_show_valid = false;
+    if (!only_show_valid)
+        printf("\tis valid: %d\n", f->valid);
+    printf("\tFile name: %s\n", f->name);
+    printf("\tFile size: %u\n", f->size);
+    printf("\tFile virtual address: 0x%x\n",f->virtual_address);
+    printf("\n");
+}
+
+
 Process *buscar_proceso(int pid) {
     Process *p = calloc(1, sizeof(Process));
     const size_t tamano_proceso = sizeof(Process);
@@ -72,13 +93,13 @@ osrmsFile *buscar_archivo(Process *p, char *name) {
     osrmsFile *osrms_file = calloc(1, sizeof(osrmsFile));
     const size_t tamano_archivo = 23;
     uint16_t base_address = p->address_on_memory + 13;
-    fseek(file, base_address, SEEK_SET);
     for (int i = 0; i < N_FILE; i++) {
-        fseek(file, i * tamano_archivo, SEEK_CUR);
+        fseek(file, base_address, SEEK_SET);
         fread(osrms_file, tamano_archivo, 1, file);
         if (file_name_is_name(osrms_file, name)) {
             return osrms_file;
         }
+        base_address += tamano_archivo;
     }
     free(osrms_file);
     return NULL;
@@ -116,11 +137,6 @@ osrmsFile **get_files(Process *p) {
         fseek(file, base_address, SEEK_SET);
         fread(files[i], tamano_archivo, 1, file);
         base_address += tamano_archivo;
-        // -1 to avoid the fseek in the next iteration
-        // because the next iteration will do the fseek
-        // in the correct position
-        // copilot comentó esto
-        // QUE FSEEK HACE QUE
     }
     return files;
 }

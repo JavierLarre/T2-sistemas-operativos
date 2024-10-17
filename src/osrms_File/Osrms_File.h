@@ -42,6 +42,8 @@ void set_memory_path(const char *path);
 FILE *get_memory_file();
 void close_memory();
 
+void print_process(Process *p);
+void print_file(osrmsFile *f);
 bool file_is_valid(osrmsFile *f);
 Process *buscar_proceso(int pid);
 osrmsFile *buscar_archivo(Process *p, char *name);

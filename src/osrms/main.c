@@ -4,9 +4,7 @@
 
 
 void events() {
-    os_ls_processes();
-    os_ls_files(117);
-    printf("size: %zu\n", sizeof(osrmsFile));
+    printf("exists: %d\n", os_exists(117, "facebook.png"));
 }
 
 int main(int argc, char const *argv[])

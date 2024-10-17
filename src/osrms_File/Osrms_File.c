@@ -58,7 +58,12 @@ Process *buscar_proceso(int pid) {
 }
 
 
-bool file_is_valid(osrmsFile *f, char *name) {
+bool file_is_valid(osrmsFile *f) {
+    return f->valid;
+}
+
+
+bool file_name_is_name(osrmsFile *f, char *name) {
     return f->valid && compare_unsigned_string(f->name, name, sizeof(f->name));
 }
 
@@ -71,7 +76,7 @@ osrmsFile *buscar_archivo(Process *p, char *name) {
     for (int i = 0; i < N_FILE; i++) {
         fseek(file, i * tamano_archivo, SEEK_CUR);
         fread(osrms_file, tamano_archivo, 1, file);
-        if (file_is_valid(osrms_file, name)) {
+        if (file_name_is_name(osrms_file, name)) {
             return osrms_file;
         }
     }
@@ -302,4 +307,22 @@ uint32_t get_virtual_address(Process *p, uint32_t file_size) {
     free(addresses);
     free(sizes);
     return virtual_address;
+}
+
+
+Process *get_process_from_file(osrmsFile *f) {
+    Process **processes = get_processes();
+    for (int i = 0; i < N_PROCESS; i++) {
+        osrmsFile **files = get_files(processes[i]);
+        for (int j = 0; j < N_FILE; j++) {
+            if (file_name_is_name(files[j], (char*) f->name)) {
+                free_files(files);
+                free_processes(processes);
+                return processes[i];
+            }
+        }
+        free_files(files);
+    }
+    free_processes(processes);
+    return NULL;
 }

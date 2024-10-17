@@ -97,7 +97,8 @@ void os_tp_bitmap() {
 void os_start_process(int process_id, char *process_name) {
     Process **processes = get_processes();
     for (int i = 0; i < N_PROCESS; i++) {
-        if (processes[i]->valid) continue;
+        if (processes[i]->valid)
+            continue;
         processes[i]->valid = 1;
         processes[i]->pid = process_id;
         strcpy((char*) processes[i]->name, process_name);
@@ -114,12 +115,12 @@ void os_finish_process(int process_id) {
     for (int i = 0; i < N_PROCESS; i++) {
         if (processes[i]->pid == process_id) {
             processes[i]->valid = 0;
-            fseek(memory, processes[i]->address_on_memory, SEEK_SET);
-            fwrite(processes[i], sizeof(Process), 1, memory);
+            save_process(processes[i]);
             break;
         }
     }
     free_processes(processes);
+    // TODO: liberar memoria ocupada
 }
 
 
@@ -127,61 +128,44 @@ osrmsFile *os_open(int process_id, char *file_name, char mode) {
     
     if (mode != 'r' && mode != 'w') return NULL;
     Process *p = buscar_proceso(process_id);
-    if (!p) return NULL; // Process not found. When process is NULL "buscar_proceso" will free it.
+    if (p == NULL) return NULL; 
     osrmsFile *p_file = buscar_archivo(p, file_name);
     if (mode == 'r') {
         free(p);
         return p_file;
     }
-    if (!p_file) { // Mode is 'w' and file does not exist
-        osrmsFile **files = get_files(p);
-        for (int i = 0; i < N_FILE; i++) {
-            if (!files[i]->valid) {
-                p_file = files[i];
-                p_file->valid = 1;
-                strcpy((char*) p_file->name, file_name);
-                p_file->size = 0;
-                p_file->virtual_address = 0; // 0 For the moment
-                break;
-            }
-        }
-        if (!p_file) { // File table is full
-            return NULL;
-        }
-        save_files(files, p);
-        free_files(files);
-        return p_file;
+    if (p_file) {
+        // File exists
+        free(p);
+        free(p_file);
+        return NULL; 
     }
-    free(p);
-    free(p_file);
-    return NULL; // File already exists
+    osrmsFile **files = get_files(p);
+    for (int i = 0; i < N_FILE; i++) {
+        if (file_is_valid(files[i]))
+            continue;
+        p_file = files[i];
+        p_file->valid = 1;
+        strcpy((char*) p_file->name, file_name);
+        p_file->size = 0;
+        p_file->virtual_address = 0; // 0 For the moment
+        break;
+    }
+    if (p_file == NULL) // File table is full
+        return NULL;
+    save_files(files, p);
+    free_files(files);
+    return p_file;
 }
 
 // Read the file data from memory, save it in a new file and return the amount of bytes read
 int os_read_file(osrmsFile *file_desc, char *dest) {
     
-    // find the process that owns the file
-
-    Process **processes = get_processes();
-
-    Process *p = NULL;
-
-    for (int i = 0; i < N_PROCESS; i++) {
-        if (!processes[i]->valid) continue;
-        osrmsFile *file = buscar_archivo(processes[i], file_desc->name);
-        if (file) {
-            p = processes[i];
-            free(file);
-            break;
-        }
-    }
-
-    if (!p) {
+    Process *p = get_process_from_file(file_desc);
+    if (p == NULL) {
         printf("Given file does not exist\n");
-        free_processes(processes);
         return 0;
     }
-
     int total_read_bytes = 0;
     int current_page = 0;
     FILE *memory = get_memory_file();
@@ -225,7 +209,6 @@ int os_read_file(osrmsFile *file_desc, char *dest) {
     }
 
     fclose(dest_file);
-    free_processes(processes);
     return total_read_bytes;
 }
 
@@ -240,7 +223,7 @@ int os_write_file(osrmsFile *file_desc, char *src) {
 
     for (int i = 0; i < N_PROCESS; i++) {
         if (!processes[i]->valid) continue;
-        osrmsFile *file = buscar_archivo(processes[i], file_desc->name);
+        osrmsFile *file = buscar_archivo(processes[i], (char*) file_desc->name);
         if (file) {
             p = processes[i];
             free(file);
@@ -356,7 +339,7 @@ void os_close(osrmsFile *file_desc) {
 
     for (int i = 0; i < N_PROCESS; i++) {
         if (!processes[i]->valid) continue;
-        osrmsFile *file = buscar_archivo(processes[i], file_desc->name);
+        osrmsFile *file = buscar_archivo(processes[i], (char*) file_desc->name);
         if (file) {
             p = processes[i];
             free(file);

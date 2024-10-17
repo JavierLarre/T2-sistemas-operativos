@@ -42,18 +42,23 @@ void set_memory_path(const char *path);
 FILE *get_memory_file();
 void close_memory();
 
+bool file_is_valid(osrmsFile *f);
 Process *buscar_proceso(int pid);
 osrmsFile *buscar_archivo(Process *p, char *name);
 Process **get_processes();
-void free_processes(Process **processes);
 osrmsFile **get_files(Process *p);
-void free_files(osrmsFile **files);
+
 uint8_t get_frame_bitmap_byte(int byte_index);
 uint8_t get_table_bitmap_byte(int byte_index);
+
 void save_process(Process *p);
 void save_files(osrmsFile **files, Process *p);
+void free_processes(Process **processes);
+void free_files(osrmsFile **files);
+
 uint16_t *get_fo_page_table(Process *p);
 uint16_t *get_so_page_table(int so_page_table_number);
+
 uint16_t get_vpn(uint32_t virtual_address);
 uint8_t get_vpn1(uint16_t vpn);
 uint8_t get_vpn2(uint16_t vpn);
@@ -61,3 +66,4 @@ uint32_t get_physical_address(Process *p, osrmsFile *f);
 uint32_t *get_occupied_addres(Process *p);
 uint32_t *get_file_sizes(Process *p);
 uint32_t get_virtual_address(Process *p, uint32_t file_size);
+Process *get_process_from_file(osrmsFile *f);
